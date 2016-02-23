@@ -289,56 +289,12 @@ local function switch(dir, alt, tab, shift_tab)
 
    -- Get focus history for current tag
    local s = mouse.screen;
-   local idx = 0
-   local c = awful.client.focus.history.get(s, idx)
 
-   while c do
-      table.insert(altTabTable, c)
-      table.insert(altTabMinimized, c.minimized)
-      table.insert(altTabOpacity, c.opacity)
-      idx = idx + 1
-      c = awful.client.focus.history.get(s, idx)
-   end
-
-   -- Minimized clients will not appear in the focus history
-   -- Find them by cycling through all clients, and adding them to the list
-   -- if not already there.
-   -- This will preserve the history AND enable you to focus on minimized clients
-
-   local t = awful.tag.selected(s)
-   local all = client.get(s)
-   
-
-   for i = 1, #all do
-      local c = all[i]
-      local ctags = c:tags();
-
-      -- check if the client is on the current tag
-      local isCurrentTag = false
-      for j = 1, #ctags do
-	 if t == ctags[j] then
-	    isCurrentTag = true
-	    break
-	 end
-      end
-
-      if isCurrentTag then
-	 -- check if client is already in the history
-	 -- if not, add it
-	 local addToTable = true
-	 for k = 1, #altTabTable do
-	    if altTabTable[k] == c then
-	       addToTable = false
-	       break
-	    end
-	 end
-
-
-	 if addToTable then
-	    table.insert(altTabTable, c)
-	    table.insert(altTabMinimized, c.minimized)
-	    table.insert(altTabOpacity, c.opacity)
-	 end
+   altTabTable = client.get(s);
+   if #altTabTable >= 1 then
+      for i = 1 , #altTabTable do
+         table.insert(altTabMinimized, altTabTable[i].minimized)
+         table.insert(altTabOpacity, altTabTable[i].opacity)
       end
    end
 
@@ -409,7 +365,7 @@ local function switch(dir, alt, tab, shift_tab)
             -- raise chosen client on top of all
             c = altTabTable[altTabIndex]
             c:raise()
-            client.focus = c                  
+            client.focus = c
 
             -- restore minimized clients
             for i = 1, #altTabTable do
@@ -418,16 +374,21 @@ local function switch(dir, alt, tab, shift_tab)
                end
                altTabTable[i].opacity = altTabOpacity[i]
             end
+            awful.tag.viewonly(c:tags()[1])
 
             keygrabber.stop()
 
                 -- Move to next client on each Tab-press
          elseif (key == tab or key == "Right") and event == "press" then
             altTabIndex = cycle(altTabTable, altTabIndex, 1)
+            altTabTable[altTabIndex]:raise()
+            awful.tag.viewonly(altTabTable[altTabIndex]:tags()[1])
             
                 -- Move to previous client on Shift-Tab
          elseif (key == shift_tab or key == "Left") and event == "press" then
             altTabIndex = cycle(altTabTable, altTabIndex, -1)
+            altTabTable[altTabIndex]:raise()
+            awful.tag.viewonly(altTabTable[altTabIndex]:tags()[1])
          end
           end
        )
